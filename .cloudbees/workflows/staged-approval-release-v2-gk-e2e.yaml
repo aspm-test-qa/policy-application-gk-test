@@ -67,16 +67,41 @@ jobs:
           repository: https://github.com/Dev-Org-Hari/webrtc-go
           ref: main
           path: webrtc-repo
+
       - name: Run Gitleaks Scan
         id: gitleaks-step
         uses: cloudbees-io/gitleaks-plugin@v1
         with:
           workspace-dir: webrtc-repo
+
+      - name: Print Gitleaks Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Gitleaks Scan Results ==="
+          echo "Critical: ${{ steps.gitleaks-step.outputs.critical-count }}"
+          echo "Very High: ${{ steps.gitleaks-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.gitleaks-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.gitleaks-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.gitleaks-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.gitleaks-step.outputs.policy-subject }}"
+
       - name: Run Gosec Scan
         id: gosec-step
         uses: cloudbees-io/gosec-plugin@v1
         with:
           workspace-dir: webrtc-repo
+
+      - name: Print Gosec Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Gosec Scan Results ==="
+          echo "Critical: ${{ steps.gosec-step.outputs.critical-count }}"
+          echo "Very High: ${{ steps.gosec-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.gosec-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.gosec-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.gosec-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.gosec-step.outputs.policy-subject }}"
+
       - name: Run SonarQube Scan
         id: sonar-step
         uses: cloudbees-io/sonarqube-plugin@v1
@@ -85,6 +110,18 @@ jobs:
           url: ${{ vars.SONAR_URL }}
           username: ${{ vars.SONAR_USERNAME }}
           password: ${{ secrets.SONAR_PASSWORD }}
+
+      - name: Print SonarQube Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== SonarQube Scan Results ==="
+          echo "Critical: ${{ steps.sonar-step.outputs.critical-count }}"
+          echo "Very High: ${{ steps.sonar-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.sonar-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.sonar-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.sonar-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.sonar-step.outputs.policy-subject }}"
+
       - name: Checkout Component 2
         uses: cloudbees-io/checkout@v1
         with:
@@ -92,6 +129,7 @@ jobs:
           repository: https://github.com/fintech-bank-1/gosec-count
           ref: main
           path: gosec-count
+
       - name: Run CheckmarxOne SAST Scan
         id: checkmarxone-step
         uses: cloudbees-io/checkmarxone-sast-plugin@v1
@@ -100,6 +138,18 @@ jobs:
           url: ${{ vars.CHECKMARXONE_BASE_URL }}
           tenant: ${{ vars.CHECKMARXONE_TENANT }}
           workspace-dir: gosec-count
+
+      - name: Print CheckmarxOne Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== CheckmarxOne SAST Scan Results ==="
+          echo "Critical: ${{ steps.checkmarxone-step.outputs.critical-count }}"
+          echo "Very High: ${{ steps.checkmarxone-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.checkmarxone-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.checkmarxone-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.checkmarxone-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.checkmarxone-step.outputs.policy-subject }}"
+
       - name: Run Snyk SAST Scan
         id: snyk-sast-step
         uses: cloudbees-io/snyk-sast-plugin@v1
@@ -107,24 +157,83 @@ jobs:
           snyk-token: ${{ secrets.SNYK_TOKEN }}
           org-id: ${{ vars.SNYK_ORG_ID }}
           workspace-dir: gosec-count
+
+      - name: Print Snyk SAST Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Snyk SAST Scan Results ==="
+          echo "Critical: ${{ steps.snyk-sast-step.outputs.critical-count }}"
+          echo "Very High: ${{ steps.snyk-sast-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.snyk-sast-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.snyk-sast-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.snyk-sast-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.snyk-sast-step.outputs.policy-subject }}"
+
       - name: jfrog-actions-workflow-download
         uses: cloudbees-io/jfrog-artifactory-download-file@v1
         with:
-          url: ${{ vars.JFROG_URL }}
-          username: ${{ vars.JFROG_ACTIONS_USERNAME }}
-          password: ${{ secrets.JFROG_ACTIONS_PASSWORD }}
+          url: ${{ vars.PE_JFROG_URL }}
+          username: ${{ vars.PE_JFROG_ACTIONS_USERNAME }}
+          password: ${{ secrets.PE_JFROG_ACTIONS_PASSWORD }}
           file-path: /cloudbees/workspace/golang-alpine.tar
           artifactory-path: test-generic-repo/jfrogtest/golang-alpine.tar
+
       - name: Scan with Trivy
         id: trivy-scan
         uses: cloudbees-io/trivy-plugin@v1
         with:
           binary-tar-path: /cloudbees/workspace/golang-alpine.tar
+
+      - name: Print Trivy Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Trivy Scan Results ==="
+          echo "Critical: ${{ steps.trivy-scan.outputs.critical-count }}"
+          echo "Very High: ${{ steps.trivy-scan.outputs.very-high-count }}"
+          echo "High: ${{ steps.trivy-scan.outputs.high-count }}"
+          echo "Medium: ${{ steps.trivy-scan.outputs.medium-count }}"
+          echo "Low: ${{ steps.trivy-scan.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.trivy-scan.outputs.policy-subject }}"
+
       - name: Scan with Grype
         id: grype-scan
         uses: cloudbees-io/grype-plugin@v1
         with:
           binary-tar-path: /cloudbees/workspace/golang-alpine.tar
+
+      - name: Print Grype Outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Grype Scan Results ==="
+          echo "Critical: ${{ steps.grype-scan.outputs.critical-count }}"
+          echo "Very High: ${{ steps.grype-scan.outputs.very-high-count }}"
+          echo "High: ${{ steps.grype-scan.outputs.high-count }}"
+          echo "Medium: ${{ steps.grype-scan.outputs.medium-count }}"
+          echo "Low: ${{ steps.grype-scan.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.grype-scan.outputs.policy-subject }}"
+
+      - name: Print All Scan Summary
+        uses: docker://alpine:latest
+        run: |
+          echo "======================================"
+          echo "=== SAST/SCA Scan Summary ==="
+          echo "======================================"
+          echo "--- Gitleaks ---"
+          echo "Critical: ${{ steps.gitleaks-step.outputs.critical-count }} | High: ${{ steps.gitleaks-step.outputs.high-count }} | Medium: ${{ steps.gitleaks-step.outputs.medium-count }} | Low: ${{ steps.gitleaks-step.outputs.low-count }}"
+          echo "--- Gosec ---"
+          echo "Critical: ${{ steps.gosec-step.outputs.critical-count }} | High: ${{ steps.gosec-step.outputs.high-count }} | Medium: ${{ steps.gosec-step.outputs.medium-count }} | Low: ${{ steps.gosec-step.outputs.low-count }}"
+          echo "--- SonarQube ---"
+          echo "Critical: ${{ steps.sonar-step.outputs.critical-count }} | High: ${{ steps.sonar-step.outputs.high-count }} | Medium: ${{ steps.sonar-step.outputs.medium-count }} | Low: ${{ steps.sonar-step.outputs.low-count }}"
+          echo "--- CheckmarxOne ---"
+          echo "Critical: ${{ steps.checkmarxone-step.outputs.critical-count }} | High: ${{ steps.checkmarxone-step.outputs.high-count }} | Medium: ${{ steps.checkmarxone-step.outputs.medium-count }} | Low: ${{ steps.checkmarxone-step.outputs.low-count }}"
+          echo "--- Snyk SAST ---"
+          echo "Critical: ${{ steps.snyk-sast-step.outputs.critical-count }} | High: ${{ steps.snyk-sast-step.outputs.high-count }} | Medium: ${{ steps.snyk-sast-step.outputs.medium-count }} | Low: ${{ steps.snyk-sast-step.outputs.low-count }}"
+          echo "--- Trivy ---"
+          echo "Critical: ${{ steps.trivy-scan.outputs.critical-count }} | High: ${{ steps.trivy-scan.outputs.high-count }} | Medium: ${{ steps.trivy-scan.outputs.medium-count }} | Low: ${{ steps.trivy-scan.outputs.low-count }}"
+          echo "--- Grype ---"
+          echo "Critical: ${{ steps.grype-scan.outputs.critical-count }} | High: ${{ steps.grype-scan.outputs.high-count }} | Medium: ${{ steps.grype-scan.outputs.medium-count }} | Low: ${{ steps.grype-scan.outputs.low-count }}"
+          echo "======================================"
+
   approval:
     needs:
       - create-release-ticket
@@ -139,6 +248,7 @@ jobs:
       disallowLaunchByUser: false
       approvers: release-managers
       notifyAllEligibleUsers: false
+
   helm-deploy:
     needs: approval
     steps:
