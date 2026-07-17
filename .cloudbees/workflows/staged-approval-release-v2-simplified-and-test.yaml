@@ -70,11 +70,13 @@ jobs:
           repository: https://github.com/Dev-Org-Hari/webrtc-go
           ref: main
           path: webrtc-repo
+
       - name: Run Gitleaks Scan
         id: gitleaks-step
         uses: cloudbees-io/gitleaks-plugin@v1
         with:
           workspace-dir: webrtc-repo
+
       - name: Print Gitleaks Outputs
         uses: docker://alpine:latest
         run: |
@@ -85,6 +87,7 @@ jobs:
           echo "Medium: ${{ steps.gitleaks-step.outputs.medium-count }}"
           echo "Low: ${{ steps.gitleaks-step.outputs.low-count }}"
           echo "Policy Subject: ${{ steps.gitleaks-step.outputs.policy-subject }}"
+
       - name: jfrog-actions-workflow-download
         uses: cloudbees-io/jfrog-artifactory-download-file@v1
         with:
@@ -93,11 +96,13 @@ jobs:
           password: ${{ secrets.PE_JFROG_ACTIONS_PASSWORD }}
           file-path: /cloudbees/workspace/golang-alpine.tar
           artifactory-path: test-generic-repo/jfrogtest/golang-alpine.tar
+
       - name: Scan with Trivy
         id: trivy-scan
         uses: cloudbees-io/trivy-plugin@v1
         with:
           binary-tar-path: /cloudbees/workspace/golang-alpine.tar
+
       - name: Print Trivy Outputs
         uses: docker://alpine:latest
         run: |
@@ -108,6 +113,7 @@ jobs:
           echo "Medium: ${{ steps.trivy-scan.outputs.medium-count }}"
           echo "Low: ${{ steps.trivy-scan.outputs.low-count }}"
           echo "Policy Subject: ${{ steps.trivy-scan.outputs.policy-subject }}"
+
       - name: Print All Scan Summary
         uses: docker://alpine:latest
         run: |
@@ -119,13 +125,16 @@ jobs:
           echo "--- Trivy ---"
           echo "Critical: ${{ steps.trivy-scan.outputs.critical-count }} | High: ${{ steps.trivy-scan.outputs.high-count }} | Medium: ${{ steps.trivy-scan.outputs.medium-count }} | Low: ${{ steps.trivy-scan.outputs.low-count }}"
           echo "======================================"
+
   policy-check-release-readiness:
     needs: checkout-and-sast-scan
-    uses: cloudbees-io/policy-utils/.cloudbees/workflows/action.yaml@main
-    with:
-      policy-id: 5959edf7-b1e3-4a65-9ea4-64bb0f626e57
-      input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
-    secrets: inherit
+    steps:
+      - name: Run policy check
+        uses: cloudbees-io/policy-check@v2
+        with:
+          policy: 5959edf7-b1e3-4a65-9ea4-64bb0f626e57
+          input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
+
   approval:
     needs:
       - create-release-ticket
@@ -141,6 +150,7 @@ jobs:
       disallowLaunchByUser: false
       approvers: release-managers
       notifyAllEligibleUsers: false
+
   helm-deploy:
     needs: approval
     steps:
