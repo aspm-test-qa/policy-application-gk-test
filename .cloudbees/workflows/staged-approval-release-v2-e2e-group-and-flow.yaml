@@ -130,7 +130,7 @@ jobs:
   policy-check-release-readiness:
     needs: checkout-and-sast-scan
     steps:
-      - name: "P1 - group-critical-high (expect PASS: Group1 fails, Group2 passes)"
+      - name: "P1 - group-critical-high (expect BLOCK: Group1 fails, Group2 passes)"
         id: p1-group-critical-high
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -138,7 +138,7 @@ jobs:
           policy: 1a2b84d0-66d6-41d3-8188-89abbdbb6d9d
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
 
-      - name: "P2 - group-high-medium (expect PASS: Group1 fails, Group2 passes)"
+      - name: "P2 - group-high-medium (expect BLOCK: Group1 fails, Group2 passes)"
         id: p2-group-high-medium
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -146,7 +146,7 @@ jobs:
           policy: 3e299efc-0169-4175-ad1f-27add0a873cf
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
 
-      - name: "P3 - critical-AND-high (expect FAIL: high=11 > 10)"
+      - name: "P3 - critical-AND-high (expect CONTINUE: high=11 > 10)"
         id: p3-critical-and-high
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -154,7 +154,7 @@ jobs:
           policy: bfe73083-bf30-41d9-9651-218961f64c0f
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
 
-      - name: "P4 - critical-AND-medium (expect PASS: critical=0, medium=19<=20)"
+      - name: "P4 - critical-AND-medium (expect BLOCK: critical=0, medium=19<=20)"
         id: p4-critical-and-medium
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -162,7 +162,7 @@ jobs:
           policy: b52fa9bd-6585-44bb-b7c2-8347c9c6960a
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
 
-      - name: "P5 - group-cross-severity (expect PASS: Group1 fails, Group2 passes)"
+      - name: "P5 - group-cross-severity (expect BLOCK: Group1 fails, Group2 passes)"
         id: p5-group-cross-severity
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -170,7 +170,7 @@ jobs:
           policy: 37008eaf-1836-4b45-bda0-9127632d6c68
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
 
-      - name: "P6 - all-severities-AND (expect FAIL: high=11 > 10 breaks AND)"
+      - name: "P6 - all-severities-AND (expect CONTINUE: high=11 > 10 breaks AND)"
         id: p6-all-severities-and
         continue-on-error: true
         uses: cloudbees-io/policy-check@v1
@@ -184,12 +184,12 @@ jobs:
           echo "============================================"
           echo "=== Policy Matrix Results Summary ==="
           echo "============================================"
-          echo "P1 group-critical-high  [expect PASS] - see step result above"
-          echo "P2 group-high-medium    [expect PASS] - see step result above"
-          echo "P3 critical-AND-high    [expect FAIL] - see step result above"
-          echo "P4 critical-AND-medium  [expect PASS] - see step result above"
-          echo "P5 group-cross-severity [expect PASS] - see step result above"
-          echo "P6 all-severities-AND   [expect FAIL] - see step result above"
+          echo "P1 group-critical-high  [expect BLOCK] - see step result above"
+          echo "P2 group-high-medium    [expect BLOCK] - see step result above"
+          echo "P3 critical-AND-high    [expect CONTINUE] - see step result above"
+          echo "P4 critical-AND-medium  [expect BLOCK] - see step result above"
+          echo "P5 group-cross-severity [expect BLOCK] - see step result above"
+          echo "P6 all-severities-AND   [expect CONTINUE] - see step result above"
           echo "============================================"
 
   approval:
