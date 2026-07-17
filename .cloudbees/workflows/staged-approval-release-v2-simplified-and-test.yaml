@@ -130,7 +130,7 @@ jobs:
     needs: checkout-and-sast-scan
     steps:
       - name: Run policy check
-        uses: cloudbees-io/policy-check@v2
+        uses: cloudbees-io/policy-check@v1
         with:
           policy: 5959edf7-b1e3-4a65-9ea4-64bb0f626e57
           input-data: ${{ needs.checkout-and-sast-scan.outputs.policy-subject }}
