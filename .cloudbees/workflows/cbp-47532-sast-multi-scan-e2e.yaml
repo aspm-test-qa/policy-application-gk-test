@@ -1,0 +1,92 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: cbp-47532-sast-multi-scan-e2e
+on:
+  workflow_dispatch:
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+metadata:
+  stages/v1alpha1:
+    - name: SAST Scans
+      jobs:
+        - sast-scans
+    - name: Policy Gate
+      jobs:
+        - sast-policy-gate
+jobs:
+  sast-scans:
+    outputs:
+      policy-input: ${{ steps.build-input.outputs.policy-input }}
+    steps:
+      - name: Checkout webrtc-go
+        uses: cloudbees-io/checkout@v1
+        with:
+          provider: github
+          repository: https://github.com/Dev-Org-Hari/webrtc-go
+          ref: main
+          path: webrtc-repo
+      - name: Run Gosec
+        id: gosec
+        uses: cloudbees-io/gosec-plugin@v1
+        with:
+          workspace-dir: webrtc-repo
+      - name: Print Gosec outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Gosec Scan Results ==="
+          echo "Critical:     ${{ steps.gosec.outputs.critical-count }}"
+          echo "Very High:    ${{ steps.gosec.outputs.very-high-count }}"
+          echo "High:         ${{ steps.gosec.outputs.high-count }}"
+          echo "Medium:       ${{ steps.gosec.outputs.medium-count }}"
+          echo "Low:          ${{ steps.gosec.outputs.low-count }}"
+          echo "Policy subject: ${{ steps.gosec.outputs.policy-subject }}"
+      - name: Run SonarQube
+        id: sonar
+        uses: cloudbees-io/sonarqube-plugin@v1
+        with:
+          workspace-dir: webrtc-repo
+          url: ${{ vars.SONAR_URL }}
+          username: ${{ vars.SONAR_USERNAME }}
+          password: ${{ secrets.SONAR_PASSWORD }}
+      - name: Print SonarQube outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== SonarQube Scan Results ==="
+          echo "Critical:     ${{ steps.sonar.outputs.critical-count }}"
+          echo "Very High:    ${{ steps.sonar.outputs.very-high-count }}"
+          echo "High:         ${{ steps.sonar.outputs.high-count }}"
+          echo "Medium:       ${{ steps.sonar.outputs.medium-count }}"
+          echo "Low:          ${{ steps.sonar.outputs.low-count }}"
+          echo "Policy subject: ${{ steps.sonar.outputs.policy-subject }}"
+      - name: Assemble policy input
+        id: build-input
+        uses: docker://alpine:latest
+        run: |
+          printf '[%s,%s]' \
+            '${{ steps.gosec.outputs.policy-subject }}' \
+            '${{ steps.sonar.outputs.policy-subject }}' \
+            | tee /tmp/policy-input.json
+          cp /tmp/policy-input.json "$CLOUDBEES_OUTPUTS/policy-input"
+          echo ""
+          echo "=== Combined policy input (passed to gate) ==="
+          cat /tmp/policy-input.json
+  sast-policy-gate:
+    needs: sast-scans
+    steps:
+      - name: Evaluate SAST all-tools-must-pass policy
+        id: policy
+        uses: cloudbees-io/policy-check@v1
+        with:
+          policy: fd5c5ceb-3dae-4259-a52b-970d14e5fd7e
+          input-data: ${{ needs.sast-scans.outputs.policy-input }}
+      - name: Print policy gate outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "=== Policy Gate Result ==="
+          echo "Action:              ${{ steps.policy.outputs.action }}"
+          echo "Details:             ${{ steps.policy.outputs.details }}"
+          echo "Review channel:      ${{ steps.policy.outputs.review-channel }}"
+          echo "Review recipients:   ${{ steps.policy.outputs.review-recipients }}"
+          echo "Review timeout (min): ${{ steps.policy.outputs.review-timeout-minutes }}"
